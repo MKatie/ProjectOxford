@@ -90,6 +90,20 @@
     <Content Include="Images\Test\DobrySherlockiWatson.jpg" />
     <Content Include="Images\Test\TestSherlock.jpg" />
     <Content Include="Images\Test\ZlySherlock.jpg" />
+    <Content Include="Music\Angry\Black Sabbath - Black Sabbath - 05 - Evil Woman.mp3" />
+    <Content Include="Music\Happy\07-godsmack-good_day_to_die.mp3" />
+    <Content Include="Music\Sad\204-coma-zamet.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="WMPLib">
+      <Guid>{6BF52A50-394A-11D3-B153-00C04F79FAA6}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </COMReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

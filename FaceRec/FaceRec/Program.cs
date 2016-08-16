@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WMPLib;
 
 namespace FaceRec
 {
@@ -16,7 +17,6 @@ namespace FaceRec
    {
       static IFaceServiceClient faceServiceClient = new FaceServiceClient("e8be260d45f840808f6c8999c9fd8881");
       static EmotionServiceClient emotionServiceClient = new EmotionServiceClient("3efe0786c0dd4ee3a14d48501f2a83d1");
-
 
       static void Main(string[] args)
       {
@@ -37,7 +37,7 @@ namespace FaceRec
       {
          string personGroupId = "inhabitants";
          //CreatePersonGroup(personGroupId);
-             
+
          //testowanie zdjecia 
          string testImage = @"..\..\Images\Test\DobrySherlockiWatson.jpg";
 
@@ -47,7 +47,7 @@ namespace FaceRec
             Face[] faces = faceServiceClient.DetectAsync(s).Result;
 
             //przypisanie id twarzy do tablicy face
-            Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();  
+            Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
 
             //Identyfikacja Id twarzy w bazie person grupy
             IdentifyResult[] results = faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
@@ -62,10 +62,10 @@ namespace FaceRec
                {
                   var candidateId = identifyResult.Candidates[0].PersonId;
                   var person = faceServiceClient.GetPersonAsync(personGroupId, candidateId).Result;
-                  Console.WriteLine("Identified as {0}", person.Name);          
-               }            
-            }         
-         }         
+                  Console.WriteLine("Identified as {0}", person.Name);
+               }
+            }
+         }
       }
 
       //tworzenie i trenowanie person grupy pokemonow
@@ -112,17 +112,59 @@ namespace FaceRec
       static void EmotionTest()
       {
          Emotion[] emotionResult;
-         using (Stream imageFileStream = File.OpenRead(@"..\..\Images\Sherlock\sherlock5.jpg"))
+         using (Stream imageFileStream = File.OpenRead(@"..\..\Images\Sherlock\sherlock4.png"))
          {
             emotionResult = emotionServiceClient.RecognizeAsync(imageFileStream).Result;
-            foreach(Emotion f in emotionResult)
+            foreach (Emotion f in emotionResult)
             {
-               foreach(KeyValuePair<string, float> score in f.Scores.ToRankedList())               
+               foreach (KeyValuePair<string, float> score in f.Scores.ToRankedList())
                {
                   Console.WriteLine(string.Format("{0}: {1}", score.Key, score.Value));
                }
             }
+
+            //pobranie pierwszej twarzy i emocji najwyzszej ranga
+            SelectMusic(emotionResult.First().Scores.ToRankedList().First().Key);
          }
-      }       
+      }
+
+      static void SelectMusic(string emotion)
+      {
+         switch (emotion.ToLower())
+         {
+            case "anger":
+            case "contempt":
+            case "disgust":
+               PlayMusic("Angry");
+               break;
+
+            case "happiness":
+            case "surprise":
+            case "neutral":
+               PlayMusic("Happy");
+               break;
+
+            case "sadness":
+            case "fear":
+               PlayMusic("Sad");
+               break;
+         }
+      }
+
+      //odtwarzanie muzyki z folderow
+      static void PlayMusic(string folder)
+      {
+         //pobieranie pelnej sciezki do folderu ze sciezki wzglednej
+         string musicFolder = Path.GetFullPath(string.Format(@"..\..\Music\{0}\", folder));
+
+         WindowsMediaPlayer myplayer = new WindowsMediaPlayer();
+
+         //pobranie i odtworzenie wszystkich plikow z folderu
+         foreach (string file in Directory.GetFiles(musicFolder))
+         {
+            myplayer.URL = file;
+            myplayer.controls.play();
+         }
+      }
    }
 }
