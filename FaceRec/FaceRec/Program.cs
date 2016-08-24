@@ -2,12 +2,10 @@
 using Microsoft.ProjectOxford.Emotion.Contract;
 using Microsoft.ProjectOxford.Face;
 using Microsoft.ProjectOxford.Face.Contract;
-using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using WMPLib;
 
@@ -17,11 +15,19 @@ namespace FaceRec
    {
       static IFaceServiceClient faceServiceClient = new FaceServiceClient("e8be260d45f840808f6c8999c9fd8881");
       static EmotionServiceClient emotionServiceClient = new EmotionServiceClient("3efe0786c0dd4ee3a14d48501f2a83d1");
+      
 
       static void Main(string[] args)
       {
          //PersonGroupTest();
-         EmotionTest();
+         //EmotionTest();
+         Guid profileId;
+         //profileId = SpeakerRecognition.CreateProfile();
+         profileId = new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29");
+         //SpeakerRecognition.CreateEnrollment(profileId);
+
+         Console.WriteLine(string.Format("Wynik porównania: {0}", SpeakerRecognition.IdentifySpeaker(profileId)));
+         
          Console.ReadKey();
       }
 
