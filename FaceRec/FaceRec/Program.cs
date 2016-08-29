@@ -15,26 +15,32 @@ namespace FaceRec
    {
       static void Main(string[] args)
       {
+         Console.WriteLine("To start identyfication press any key");
+         Console.ReadLine();
 
-                  //face recognition
-         //PersonGroupTest();
+         //face recognition
 
-                  //emotion
-         //EmotionTest();
+         string testImagePath = @"..\..\Test\TestFail.jpg";
 
-                  //speaker recognition
+         List<Person> detectedPersons = FaceRecognition.CheckPerson("inhabitants", testImagePath);
+    
+         //speaker recognition
          //Guid profileId;  
          //profileId = SpeakerRecognition.CreateProfile();     //wykonywaa raz, na poczatku
          //profileId = new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"); 
          //SpeakerRecognition.CreateEnrollment(profileId);
-      
+
          //Console.WriteLine(string.Format("Wynik porównania: {0}", SpeakerRecognition.IdentifySpeaker(profileId)));
 
-                 //speech recognition
-         SpeechToTextRecognition.StartMicAndRecognition();
+         //speech recognition
+         //SpeechToTextRecognition.StartMicAndRecognition();
 
+         if (detectedPersons.Count != 0)
+         {
+            EmotionRecognition.EmotionTest(testImagePath);
+         }
 
-
+         Console.WriteLine("Identyfication ended");
          Console.ReadKey();
       }
 

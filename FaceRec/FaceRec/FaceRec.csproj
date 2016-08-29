@@ -52,6 +52,10 @@
       <HintPath>..\packages\Microsoft.ProjectOxford.SpeakerRecognition.1.1.0\lib\portable45-net45+win8+wp8+wpa81\Microsoft.ProjectOxford.SpeakerRecognition.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NAudio, Version=1.7.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\NAudio.1.7.3\lib\net35\NAudio.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
@@ -95,14 +99,16 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Images\Sherlock\sherlock2.png" />
-    <Content Include="Images\Sherlock\sherlock3.jpg" />
-    <Content Include="Images\Sherlock\sherlock4.png" />
-    <Content Include="Images\Sherlock\sherlock5.jpg" />
-    <Content Include="Images\Sherlock\sherlok1.jpg" />
-    <Content Include="Images\Test\DobrySherlockiWatson.jpg" />
-    <Content Include="Images\Test\TestSherlock.jpg" />
-    <Content Include="Images\Test\ZlySherlock.jpg" />
+    <Content Include="Inhabitants\Sherlock\sherlock2.png" />
+    <Content Include="Inhabitants\Sherlock\sherlock3.jpg" />
+    <Content Include="Inhabitants\Sherlock\sherlock4.png" />
+    <Content Include="Inhabitants\Sherlock\sherlock5.jpg" />
+    <Content Include="Inhabitants\Sherlock\sherlok1.jpg" />
+    <Content Include="Test\DobrySherlockiWatson.jpg" />
+    <Content Include="Test\TestMoriarty2.jpg" />
+    <Content Include="Test\TestSherlock.jpg" />
+    <Content Include="Test\TestWatson2.jpg" />
+    <Content Include="Test\ZlySherlock.jpg" />
     <Content Include="Music\Angry\Black Sabbath - Black Sabbath - 05 - Evil Woman.mp3" />
     <Content Include="Music\Happy\07-godsmack-good_day_to_die.mp3" />
     <Content Include="Music\Sad\204-coma-zamet.mp3" />
@@ -122,7 +128,10 @@
       <EmbedInteropTypes>True</EmbedInteropTypes>
     </COMReference>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Inhabitants\Moriarty\" />
+    <Folder Include="Inhabitants\Watson\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

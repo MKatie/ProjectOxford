@@ -16,10 +16,10 @@ namespace FaceRec
       static EmotionServiceClient emotionServiceClient = new EmotionServiceClient("3efe0786c0dd4ee3a14d48501f2a83d1");
 
       //emotion API 
-      static void EmotionTest()
+      public static void EmotionTest(string imagePath)
       {
          Emotion[] emotionResult;
-         using (Stream imageFileStream = File.OpenRead(@"..\..\Images\Sherlock\sherlock4.png"))
+         using (Stream imageFileStream = File.OpenRead(imagePath))
          {
             emotionResult = emotionServiceClient.RecognizeAsync(imageFileStream).Result;
             foreach (Emotion f in emotionResult)
