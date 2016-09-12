@@ -87,8 +87,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConsoleNotifier.cs" />
     <Compile Include="EmotionRecognition.cs" />
     <Compile Include="FaceRecognition.cs" />
+    <Compile Include="INotifier.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SpeakerRecognition.cs" />
@@ -105,6 +107,7 @@
     <Content Include="Inhabitants\Sherlock\sherlock5.jpg" />
     <Content Include="Inhabitants\Sherlock\sherlok1.jpg" />
     <Content Include="Test\DobrySherlockiWatson.jpg" />
+    <Content Include="Test\TestMoriarty1.jpg" />
     <Content Include="Test\TestMoriarty2.jpg" />
     <Content Include="Test\TestSherlock.jpg" />
     <Content Include="Test\TestWatson2.jpg" />

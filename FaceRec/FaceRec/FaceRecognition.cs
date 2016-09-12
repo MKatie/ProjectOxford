@@ -11,78 +11,96 @@ namespace FaceRec
 {
    public class FaceRecognition
    {
-      static IFaceServiceClient faceServiceClient = new FaceServiceClient("e8be260d45f840808f6c8999c9fd8881");
+      private IFaceServiceClient _faceServiceClient;
 
-      static FaceRecognition()
+      private INotifier _notifier;
+
+      public FaceRecognition()
       {
+         _faceServiceClient = new FaceServiceClient("e8be260d45f840808f6c8999c9fd8881");
          string personGroupId = "inhabitants";
          CreatePersonGroup(personGroupId);
          CreatePersons(personGroupId);
       }
 
-      static void DetectTest()
+      public void SetNotifier(INotifier notifier)
       {
-         using (Stream imageFileStream = File.OpenRead(@"..\..\Images\Sherlock\sherlok1.jpg"))
+         _notifier = notifier;
+      }
+
+      public List<Person> CheckPerson(string personGroupId, string imagePath)
+      {
+         //otwarcie pliku i detekcja twarzy
+         using (Stream imageStream = File.OpenRead(imagePath))
          {
-            var faces = faceServiceClient.DetectAsync(imageFileStream, true, true).Result;
+            return CheckPerson(personGroupId, imageStream);
          }
       }
 
-      public static List<Person> CheckPerson(string personGroupId, string imagePath)
+      public List<Person> CheckPerson(string personGroupId, byte[] bytes)
+      {
+         using(Stream stream = new MemoryStream())
+         {
+            stream.Write(bytes, 0, bytes.Length);
+            stream.Position = 0;
+            return CheckPerson(personGroupId, stream);
+         }
+      }
+
+      public List<Person> CheckPerson(string personGroupId, Stream imageStream)
       {
          List<Person> detectedPersons = new List<Person>();
 
-         //otwarcie pliku i detekcja twarzy
-         using (Stream s = File.OpenRead(imagePath))
+         Face[] faces = _faceServiceClient.DetectAsync(imageStream).Result;
+
+         //przypisanie id twarzy do tablicy face
+         Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
+
+         //Identyfikacja Id twarzy w bazie person grupy
+         IdentifyResult[] results = _faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
+         foreach (IdentifyResult identifyResult in results)
          {
-            Face[] faces = faceServiceClient.DetectAsync(s).Result;
+            _notifier?.Notify(string.Format("Result of face: {0}", identifyResult.FaceId));
+            //_notifier?.Notify($"Result of face: {identifyResult.FaceId}");
 
-            //przypisanie id twarzy do tablicy face
-            Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
-
-            //Identyfikacja Id twarzy w bazie person grupy
-            IdentifyResult[] results = faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
-            foreach (IdentifyResult identifyResult in results)
+            if (identifyResult.Candidates.Length == 0)
             {
-               Console.WriteLine("Result of face: {0}", identifyResult.FaceId);
-               if (identifyResult.Candidates.Length == 0)
-               {
-                  Console.WriteLine("No one identified");
-               }
-               else
-               {
-                  var candidateId = identifyResult.Candidates[0].PersonId;
-                  var person = faceServiceClient.GetPersonAsync(personGroupId, candidateId).Result;
-                  detectedPersons.Add(person);
-                  Console.WriteLine("Identified as {0}", person.Name);
-               }
+              _notifier?.Notify("No one identified");
+            }
+            else
+            {
+               var candidateId = identifyResult.Candidates[0].PersonId;
+               var person = _faceServiceClient.GetPersonAsync(personGroupId, candidateId).Result;
+               detectedPersons.Add(person);
+               _notifier?.Notify(string.Format("Identified as {0}", person.Name));
             }
          }
          return detectedPersons;
       }
 
+
       //tworzenie i trenowanie person grupy pokemonow
-      static void CreatePersonGroup(string personGroupId)
+      private void CreatePersonGroup(string personGroupId)
       {
          //sprawdzanie czy grupa juz istnieje 
-         if(faceServiceClient.GetPersonGroupAsync(personGroupId).Result != null)
+         if (_faceServiceClient.GetPersonGroupAsync(personGroupId).Result != null)
          {
             return;
          }
 
-         faceServiceClient.CreatePersonGroupAsync(personGroupId, "Inhabitants").Wait();
+         _faceServiceClient.CreatePersonGroupAsync(personGroupId, "Inhabitants").Wait();
       }
 
-      static void CreatePerson(string personGroupId, string personName)
+      private void CreatePerson(string personGroupId, string personName)
       {
          //sprawdzenie czy dana osoba jest juz w grupie
-         if(faceServiceClient.GetPersonsAsync(personGroupId).Result.Select(x => x.Name).Contains(personName))
+         if (_faceServiceClient.GetPersonsAsync(personGroupId).Result.Select(x => x.Name).Contains(personName))
          {
             return;
          }
 
          //utworzenie osoby
-         CreatePersonResult createdPerson = faceServiceClient.CreatePersonAsync(personGroupId, personName).Result;
+         CreatePersonResult createdPerson = _faceServiceClient.CreatePersonAsync(personGroupId, personName).Result;
 
          //przypisanie sciezki do zmiennej i wyszukanie zdjec
          string imageFolder = string.Format(@"..\..\Inhabitants\{0}\", personName);
@@ -92,18 +110,18 @@ namespace FaceRec
             using (Stream imageStream = File.OpenRead(image))
             {
                //wykrywanie twarzy i dodawanie zdjec do person grupy Sherlock
-               faceServiceClient.AddPersonFaceAsync(personGroupId, createdPerson.PersonId, imageStream).Wait();
+               _faceServiceClient.AddPersonFaceAsync(personGroupId, createdPerson.PersonId, imageStream).Wait();
             }
          }
 
          //trenowanie grupy
-         faceServiceClient.TrainPersonGroupAsync(personGroupId).Wait();
+         _faceServiceClient.TrainPersonGroupAsync(personGroupId).Wait();
 
          //sprawdzanie statusu trenowania grupy 
          TrainingStatus trainingStatus = null;
          while (true)
          {
-            trainingStatus = faceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId).Result;
+            trainingStatus = _faceServiceClient.GetPersonGroupTrainingStatusAsync(personGroupId).Result;
 
             if (trainingStatus.Status != Status.Running)
             {
@@ -115,7 +133,7 @@ namespace FaceRec
       }
 
       //tworzenie osob z folderu inhabitants, na podstwie nazw folderow
-      static void CreatePersons(string personGroupId)
+      private void CreatePersons(string personGroupId)
       {
          foreach (string personName in Directory.GetDirectories(@"..\..\Inhabitants"))
          {

@@ -6,8 +6,10 @@ namespace FaceRec
 {
    public class SpeechToTextRecognition
    {
-      private static MicrophoneRecognitionClient microphoneClient;
-      static SpeechToTextRecognition()
+      private INotifier _notifier;
+
+      private MicrophoneRecognitionClient microphoneClient;
+      public SpeechToTextRecognition()
       {
          microphoneClient = SpeechRecognitionServiceFactory.CreateMicrophoneClient
          (SpeechRecognitionMode.ShortPhrase, "en-US", "08e1727427c640808a5d242aeec7fd97", "08e1727427c640808a5d242aeec7fd97");
@@ -16,35 +18,41 @@ namespace FaceRec
          microphoneClient.OnResponseReceived += OnResponseReceived;
       }
 
-      private static void OnMicrophoneStatus(object sender, MicrophoneEventArgs e)
+      public void SetNotifier(INotifier notifier)
+      {
+         _notifier = notifier;
+      }
+
+
+      private void OnMicrophoneStatus(object sender, MicrophoneEventArgs e)
       {
          if(e.Recording)
          {
-            Console.WriteLine("Please, start speaking.");         
+            _notifier?.Notify("Please, start speaking.");         
          }
       }
 
-      private static void OnResponseReceived(object sender, SpeechResponseEventArgs e)
+      private void OnResponseReceived(object sender, SpeechResponseEventArgs e)
       {
          microphoneClient.EndMicAndRecognition();
 
          string recognizedText = e.PhraseResponse.Results.Select(x => x.LexicalForm).Aggregate((x, y) => x + " " + y);
          string[] baseTexts = new[] { "Hello this is dog", "Houston we have a problem" };
 
-         Console.WriteLine(recognizedText);
+         _notifier?.Notify(recognizedText);
 
          if(baseTexts.Contains(recognizedText, StringComparer.OrdinalIgnoreCase))
          {
-            Console.WriteLine("Password correct");
+            _notifier?.Notify("Password correct");
          }
          else
          {
-            Console.WriteLine("Error");
+            _notifier?.Notify("Error");
          }
 
       }
 
-      public static void StartMicAndRecognition()
+      public void StartMicAndRecognition()
       {
          microphoneClient.StartMicAndRecognition();
       }

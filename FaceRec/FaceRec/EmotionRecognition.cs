@@ -28,6 +28,7 @@ namespace FaceRec
                {
                   Console.WriteLine(string.Format("{0}: {1}", score.Key, score.Value));
                }
+               Console.WriteLine();
             }
 
             //pobranie pierwszej twarzy i emocji najwyzszej ranga

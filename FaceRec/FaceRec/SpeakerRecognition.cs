@@ -58,7 +58,7 @@ namespace FaceRec
       {
          OperationLocation processPollingLocation;
 
-         using (Stream audioStream = File.OpenRead(@"..\..\Records\KasiaShortTest.wav"))
+         using (Stream audioStream = File.OpenRead(@"..\..\Records\MarcinTest.wav"))
          {
             processPollingLocation = speakerServiceClient.IdentifyAsync(audioStream, new[] { profileId }, true).Result;
          }

@@ -1,0 +1,23 @@
+﻿<Window x:Class="ProjectOxford.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ProjectOxford"
+        mc:Ignorable="d"
+        Title="Identyfication" Height="700" Width="1200"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="3*"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5*" />
+            <RowDefinition Height="1*" />
+        </Grid.RowDefinitions>
+        <Image x:Name="_cameraImage" Source="{Binding CurrentImage}" ></Image>
+        <Button Grid.Column="2" Grid.Row="1" x:Name="_snapshot" Click="_snapshot_Click" >Snapshot</Button>
+        <TextBlock x:Name="_messages" Grid.Column="2"></TextBlock>
+    </Grid>
+</Window>
