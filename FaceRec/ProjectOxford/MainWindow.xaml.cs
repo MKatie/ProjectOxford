@@ -20,6 +20,7 @@ using System.Windows.Threading;
 using System.Drawing.Imaging;
 using System.ComponentModel;
 using FaceRec;
+using NAudio.Wave;
 
 namespace ProjectOxford
 {
@@ -29,11 +30,11 @@ namespace ProjectOxford
    public partial class MainWindow : Window, INotifyPropertyChanged
    {
       DispatcherTimer Timer = new DispatcherTimer();
+      private WaveIn _soundReceiver;
 
       public MainWindow()
       {
          InitializeComponent();
-
          ShowCameraImage();
       }
 
@@ -44,7 +45,6 @@ namespace ProjectOxford
 
          videoSource.NewFrame += video_NewFrame;
          videoSource.Start();
-
       }
 
       private BitmapSource currentImage;
@@ -90,21 +90,47 @@ namespace ProjectOxford
          return bitmapSource;
       }
 
-      private void _snapshot_Click(object sender, RoutedEventArgs e)
+      private void _identify_Click(object sender, RoutedEventArgs e)
       {
+         var notifier = new ControlNotifier(_messages);
          var snap = _cameraImage.Source as BitmapSource;
-         
+
+         notifier.Notify("Snapshot created");
+
+         var audioRec = new AudioRecorder();
+         audioRec.SetNotifier(notifier);
+         audioRec.RecordingStopped += AudioRec_RecordingStopped;
+         audioRec.Record();
+
          snap.Freeze();
          Task.Run(() =>
          {
             var faceRec = new FaceRecognition();
             faceRec.SetNotifier(new ControlNotifier(_messages));
-            faceRec.CheckPerson("inhabitants", ToByteArray(snap));
+            var recognisedPeople = faceRec.CheckPerson("inhabitants", ToByteArray(snap));
+            SwitchResultTileColor(_faceTile, recognisedPeople.Any());
+         });         
+      }
+
+      private void AudioRec_RecordingStopped(object sender, AudioRecorderEventArgs e)
+      {
+         Task.Run(() =>
+         {
+            var speakerRec = new SpeakerRecognition();
+            speakerRec.SetNotifier(new ControlNotifier(_messages));
+            var speakerResult = speakerRec.IdentifySpeaker(new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"), e.Bytes);
+            SwitchResultTileColor(_speakerTile, speakerResult);
 
             var speechRec = new SpeechToTextRecognition();
             speechRec.SetNotifier(new ControlNotifier(_messages));
-            speechRec.StartMicAndRecognition();
-         });         
+            speechRec.ResultReceived += SpeechRec_ResultReceived;
+            speechRec.StartRecognition(e.Bytes);
+         });
+      }
+
+      private void SpeechRec_ResultReceived(object sender, bool e)
+      {
+         SwitchResultTileColor(_passwordTile, e);
       }
 
       public Stream ToStream(BitmapSource source)
@@ -134,6 +160,16 @@ namespace ProjectOxford
          }
 
          return bit;
+      }
+
+      private void SwitchResultTileColor(Border tile, bool result)
+      {
+         Application.Current.Dispatcher.BeginInvoke(DispatcherPriority.Background, new Action(() =>
+         {
+            var brush = new SolidColorBrush();
+            brush.Color = result ? System.Windows.Media.Color.FromRgb(152, 255, 102) : System.Windows.Media.Color.FromRgb(255, 51, 51);
+            tile.Background = brush;
+         }));
       }
    }
 }

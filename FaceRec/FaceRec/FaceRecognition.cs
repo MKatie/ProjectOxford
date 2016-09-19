@@ -50,31 +50,38 @@ namespace FaceRec
       public List<Person> CheckPerson(string personGroupId, Stream imageStream)
       {
          List<Person> detectedPersons = new List<Person>();
+         try
+         {            
+            Face[] faces = _faceServiceClient.DetectAsync(imageStream).Result;
 
-         Face[] faces = _faceServiceClient.DetectAsync(imageStream).Result;
+            //przypisanie id twarzy do tablicy face
+            Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
 
-         //przypisanie id twarzy do tablicy face
-         Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
-
-         //Identyfikacja Id twarzy w bazie person grupy
-         IdentifyResult[] results = _faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
-         foreach (IdentifyResult identifyResult in results)
-         {
-            _notifier?.Notify(string.Format("Result of face: {0}", identifyResult.FaceId));
-            //_notifier?.Notify($"Result of face: {identifyResult.FaceId}");
-
-            if (identifyResult.Candidates.Length == 0)
+            //Identyfikacja Id twarzy w bazie person grupy
+            IdentifyResult[] results = _faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
+            foreach (IdentifyResult identifyResult in results)
             {
-              _notifier?.Notify("No one identified");
-            }
-            else
-            {
-               var candidateId = identifyResult.Candidates[0].PersonId;
-               var person = _faceServiceClient.GetPersonAsync(personGroupId, candidateId).Result;
-               detectedPersons.Add(person);
-               _notifier?.Notify(string.Format("Identified as {0}", person.Name));
+               _notifier?.Notify(string.Format("Result of face: {0}", identifyResult.FaceId));
+               //_notifier?.Notify($"Result of face: {identifyResult.FaceId}");
+
+               if (identifyResult.Candidates.Length == 0)
+               {
+                  _notifier?.Notify("No one identified");
+               }
+               else
+               {
+                  var candidateId = identifyResult.Candidates[0].PersonId;
+                  var person = _faceServiceClient.GetPersonAsync(personGroupId, candidateId).Result;
+                  detectedPersons.Add(person);
+                  _notifier?.Notify(string.Format("Identified as {0}", person.Name));
+               }
             }
          }
+         catch(Exception)
+         {
+            _notifier?.Notify("Face not found.");
+         }
+
          return detectedPersons;
       }
 

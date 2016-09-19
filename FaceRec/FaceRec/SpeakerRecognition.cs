@@ -3,50 +3,63 @@ using Microsoft.ProjectOxford.SpeakerRecognition.Contract.Identification;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using NAudio;
+
 
 namespace FaceRec
 {
    public class SpeakerRecognition
    {
-      private static SpeakerIdentificationServiceClient speakerServiceClient = new SpeakerIdentificationServiceClient("b2ffd80aaff54fe39e57de88dd2e9c1c");
+      private SpeakerIdentificationServiceClient _speakerServiceClient;
+      private Dictionary<Guid, string> _speakers;
+      private INotifier _notifier;
 
+      public SpeakerRecognition()
+      {
+         _speakerServiceClient = new SpeakerIdentificationServiceClient("b2ffd80aaff54fe39e57de88dd2e9c1c");
+         _speakers = new Dictionary<Guid, string>
+         {
+            { new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"), "Kasia" }
+         };
+      }
+
+      public void SetNotifier(INotifier notifier)
+      {
+         _notifier = notifier;
+      }
 
       //speech API
       //metoda tworzaca profil i zwracajaca jego Id
-      public static Guid CreateProfile()
+      public Guid CreateProfile()
       {
-         CreateProfileResponse creationResponse = speakerServiceClient.CreateProfileAsync("en-US").Result;
+         CreateProfileResponse creationResponse = _speakerServiceClient.CreateProfileAsync("en-US").Result;
          return creationResponse.ProfileId;
       }
 
       //metoda przypisujaca plik dzwiekowy do profilu
-      public static void CreateEnrollment(Guid profileId)
+      public void CreateEnrollment(Guid profileId)
       {
          OperationLocation location;
          using (Stream audioStream = File.OpenRead(@"..\..\Records\KasiaRec.wav"))
          {
             //zlecenie utworzenia powiazania pliku dzwiekowego z profilem (enrollment)
-            location = speakerServiceClient.EnrollAsync(audioStream, profileId).Result;
+            location = _speakerServiceClient.EnrollAsync(audioStream, profileId).Result;
          }
 
          //sprawdzenie czy proces proces tworzenia enrollmentu sie zakonczyl
          while (true)
          {
             //wywolanie metody sprawdzajacej stan procesu
-            EnrollmentOperation enrollmentResult = speakerServiceClient.CheckEnrollmentStatusAsync(location).Result;
+            EnrollmentOperation enrollmentResult = _speakerServiceClient.CheckEnrollmentStatusAsync(location).Result;
             if (enrollmentResult.Status == Status.Succeeded)
             {
-               Console.WriteLine("Enrollment succeded");
+               _notifier?.Notify("Enrollment succeded");
                break;
             }
             else if (enrollmentResult.Status == Status.Failed)
             {
-               Console.WriteLine("Enrollment failed");
+               _notifier?.Notify("Enrollment failed");
                break;
             }
             Thread.Sleep(5000);
@@ -54,13 +67,15 @@ namespace FaceRec
 
       }
 
-      public static bool IdentifySpeaker(Guid profileId)
+      public bool IdentifySpeaker(Guid profileId, byte[] bytes)
       {
          OperationLocation processPollingLocation;
 
-         using (Stream audioStream = File.OpenRead(@"..\..\Records\MarcinTest.wav"))
-         {
-            processPollingLocation = speakerServiceClient.IdentifyAsync(audioStream, new[] { profileId }, true).Result;
+         using (MemoryStream audioStream = new MemoryStream(bytes))        
+         {            
+            WriteWavHeader(audioStream, false, 1, 16, 16000, bytes.Length);
+            audioStream.Position = 0;
+            processPollingLocation = _speakerServiceClient.IdentifyAsync(audioStream, new[] { profileId }, true).Result;
          }
 
          IdentificationOperation identyficationResult;
@@ -68,21 +83,76 @@ namespace FaceRec
          while (true)
          {
             //wywolanie metody sprawdzajacej stan procesu
-            identyficationResult = speakerServiceClient.CheckIdentificationStatusAsync(processPollingLocation).Result;
+            identyficationResult = _speakerServiceClient.CheckIdentificationStatusAsync(processPollingLocation).Result;
             if (identyficationResult.Status == Status.Succeeded)
             {
-               Console.WriteLine("Identyfication succeded");
+               _notifier?.Notify("Identification finished");
                break;
             }
             else if (identyficationResult.Status == Status.Failed)
             {
-               Console.WriteLine("Identyfication failed");
+               _notifier?.Notify("Identification failed");
                break;
             }
             Thread.Sleep(5000);
          }
 
-         return identyficationResult.ProcessingResult.IdentifiedProfileId == profileId;
+         bool speakerFound = _speakers.ContainsKey(identyficationResult.ProcessingResult.IdentifiedProfileId);
+         if (speakerFound)
+            _notifier?.Notify($"Identified speaker: {_speakers[identyficationResult.ProcessingResult.IdentifiedProfileId]}");
+
+         return speakerFound;
+      }
+
+      private void WriteWavHeader(MemoryStream stream, bool isFloatingPoint, ushort channelCount, ushort bitDepth, int sampleRate, int totalSampleCount)
+      {
+         stream.Position = 0;
+
+         // RIFF header.
+         // Chunk ID.
+         stream.Write(Encoding.ASCII.GetBytes("RIFF"), 0, 4);
+
+         // Chunk size.
+         stream.Write(BitConverter.GetBytes(totalSampleCount), 0, 4);
+
+         // Format.
+         stream.Write(Encoding.ASCII.GetBytes("WAVE"), 0, 4);
+
+
+
+         // Sub-chunk 1.
+         // Sub-chunk 1 ID.
+         stream.Write(Encoding.ASCII.GetBytes("fmt "), 0, 4);
+
+         // Sub-chunk 1 size.
+         stream.Write(BitConverter.GetBytes(16), 0, 4);
+
+         // Audio format (floating point (3) or PCM (1)). Any other format indicates compression.
+         stream.Write(BitConverter.GetBytes((ushort)(isFloatingPoint ? 3 : 1)), 0, 2);
+
+         // Channels.
+         stream.Write(BitConverter.GetBytes(channelCount), 0, 2);
+
+         // Sample rate.
+         stream.Write(BitConverter.GetBytes(sampleRate), 0, 4);
+
+         // Bytes rate.
+         stream.Write(BitConverter.GetBytes(sampleRate * channelCount * (bitDepth / 8)), 0, 4);
+
+         // Block align.
+         stream.Write(BitConverter.GetBytes((ushort)channelCount * (bitDepth / 8)), 0, 2);
+
+         // Bits per sample.
+         stream.Write(BitConverter.GetBytes(bitDepth), 0, 2);
+
+
+
+         // Sub-chunk 2.
+         // Sub-chunk 2 ID.
+         stream.Write(Encoding.ASCII.GetBytes("data"), 0, 4);
+
+         // Sub-chunk 2 size.
+         stream.Write(BitConverter.GetBytes((bitDepth / 8) * totalSampleCount), 0, 4);
       }
 
    }
