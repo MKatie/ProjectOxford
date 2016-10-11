@@ -1,18 +1,11 @@
 ﻿using AForge.Video.DirectShow;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using AForge.Video;
 using System.Drawing;
 using System.IO;
@@ -21,16 +14,14 @@ using System.Drawing.Imaging;
 using System.ComponentModel;
 using FaceRec;
 using NAudio.Wave;
+using System.Collections.Generic;
 
 namespace ProjectOxford
 {
-   /// <summary>
-   /// Interaction logic for MainWindow.xaml
-   /// </summary>
    public partial class MainWindow : Window, INotifyPropertyChanged
    {
       DispatcherTimer Timer = new DispatcherTimer();
-      private WaveIn _soundReceiver;
+      BitmapSource _snap;
 
       public MainWindow()
       {
@@ -93,7 +84,7 @@ namespace ProjectOxford
       private void _identify_Click(object sender, RoutedEventArgs e)
       {
          var notifier = new ControlNotifier(_messages);
-         var snap = _cameraImage.Source as BitmapSource;
+         _snap = _cameraImage.Source as BitmapSource;
 
          notifier.Notify("Snapshot created");
 
@@ -102,12 +93,12 @@ namespace ProjectOxford
          audioRec.RecordingStopped += AudioRec_RecordingStopped;
          audioRec.Record();
 
-         snap.Freeze();
+         _snap.Freeze();
          Task.Run(() =>
          {
             var faceRec = new FaceRecognition();
-            faceRec.SetNotifier(new ControlNotifier(_messages));
-            var recognisedPeople = faceRec.CheckPerson("inhabitants", ToByteArray(snap));
+            faceRec.SetNotifier(notifier);
+            var recognisedPeople = faceRec.CheckPerson("inhabitants", ToByteArray(_snap));
             SwitchResultTileColor(_faceTile, recognisedPeople.Any());
          });         
       }
@@ -118,7 +109,8 @@ namespace ProjectOxford
          {
             var speakerRec = new SpeakerRecognition();
             speakerRec.SetNotifier(new ControlNotifier(_messages));
-            var speakerResult = speakerRec.IdentifySpeaker(new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"), e.Bytes);
+            var speakerResult = speakerRec.IdentifySpeaker(
+               new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"), e.Bytes);
             SwitchResultTileColor(_speakerTile, speakerResult);
 
             var speechRec = new SpeechToTextRecognition();
@@ -131,18 +123,6 @@ namespace ProjectOxford
       private void SpeechRec_ResultReceived(object sender, bool e)
       {
          SwitchResultTileColor(_passwordTile, e);
-      }
-
-      public Stream ToStream(BitmapSource source)
-      {
-         JpegBitmapEncoder encoder = new JpegBitmapEncoder();
-         encoder.QualityLevel = 15;
-         MemoryStream memoryStream = new MemoryStream();
-
-         encoder.Frames.Add(BitmapFrame.Create(source));
-         encoder.Save(memoryStream);
-
-         return memoryStream;
       }
 
       public byte[] ToByteArray(BitmapSource source)
@@ -169,7 +149,28 @@ namespace ProjectOxford
             var brush = new SolidColorBrush();
             brush.Color = result ? System.Windows.Media.Color.FromRgb(152, 255, 102) : System.Windows.Media.Color.FromRgb(255, 51, 51);
             tile.Background = brush;
+            TileChanged(tile, result);
          }));
+      }
+
+
+      private static Dictionary<Border, bool> _summary = new Dictionary<Border, bool>();
+      private static readonly object _locker = new object();
+      private void TileChanged(Border tile, bool result)
+      {
+         lock (_locker)
+         {
+            _summary.Add(tile, result);
+         }                 
+         if(_summary.Count.Equals(3) && _summary.All(x => x.Value))
+         {
+            Task.Run(() =>
+            {
+               var emotionRec = new EmotionRecognition();
+               emotionRec.SetNotifier(new ControlNotifier(_messages));
+               emotionRec.RecognizeEmotionAndPlayMusic(ToByteArray(_snap));
+            });            
+         }
       }
    }
 }

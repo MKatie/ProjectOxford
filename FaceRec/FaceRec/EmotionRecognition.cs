@@ -1,42 +1,46 @@
 ﻿using Microsoft.ProjectOxford.Emotion;
 using Microsoft.ProjectOxford.Emotion.Contract;
-using System;
-using System.Collections.Generic;
+
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using WMPLib;
 
 namespace FaceRec
 {
    public class EmotionRecognition
-   {
+   {   
+      private EmotionServiceClient _emotionServiceClient;
+      private WindowsMediaPlayer _player;
 
-      static EmotionServiceClient emotionServiceClient = new EmotionServiceClient("3efe0786c0dd4ee3a14d48501f2a83d1");
+      private INotifier _notifier;
+
+      public EmotionRecognition()
+      {
+         _emotionServiceClient = new EmotionServiceClient("3efe0786c0dd4ee3a14d48501f2a83d1");
+         _player = new WindowsMediaPlayer();
+      }
+
+      public void SetNotifier(INotifier notifier)
+      {
+         _notifier = notifier;
+      }
 
       //emotion API 
-      public static void EmotionTest(string imagePath)
+      public void RecognizeEmotionAndPlayMusic(byte[] imageData)
       {
          Emotion[] emotionResult;
-         using (Stream imageFileStream = File.OpenRead(imagePath))
+         using (Stream imageFileStream = new MemoryStream(imageData))
          {
-            emotionResult = emotionServiceClient.RecognizeAsync(imageFileStream).Result;
-            foreach (Emotion f in emotionResult)
-            {
-               foreach (KeyValuePair<string, float> score in f.Scores.ToRankedList())
-               {
-                  Console.WriteLine(string.Format("{0}: {1}", score.Key, score.Value));
-               }
-               Console.WriteLine();
-            }
+            emotionResult = _emotionServiceClient.RecognizeAsync(imageFileStream).Result;
 
             //pobranie pierwszej twarzy i emocji najwyzszej ranga
-            SelectMusic(emotionResult.First().Scores.ToRankedList().First().Key);
+            var recognizedEmotion = emotionResult.First().Scores.ToRankedList().First().Key;
+            _notifier?.Notify(string.Format("Recognized emotion: {0}", recognizedEmotion));
+            SelectMusic(recognizedEmotion);
          }
       }
 
-      static void SelectMusic(string emotion)
+      private void SelectMusic(string emotion)
       {
          switch (emotion.ToLower())
          {
@@ -60,18 +64,17 @@ namespace FaceRec
       }
 
       //odtwarzanie muzyki z folderow
-      static void PlayMusic(string folder)
+      private void PlayMusic(string folder)
       {
          //pobieranie pelnej sciezki do folderu ze sciezki wzglednej
-         string musicFolder = Path.GetFullPath(string.Format(@"..\..\Music\{0}\", folder));
+         string musicFolder = Path.GetFullPath(string.Format(@"..\..\Music\{0}\", folder));         
 
-         WindowsMediaPlayer myplayer = new WindowsMediaPlayer();
-
+         _notifier?.Notify(string.Format("Playing music from playlist: {0}", folder));
          //pobranie i odtworzenie wszystkich plikow z folderu
          foreach (string file in Directory.GetFiles(musicFolder))
          {
-            myplayer.URL = file;
-            myplayer.controls.play();
+            _player.URL = file;
+            _player.controls.play();
          }
       }
    }

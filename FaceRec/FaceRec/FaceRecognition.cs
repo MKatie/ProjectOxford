@@ -39,7 +39,7 @@ namespace FaceRec
 
       public List<Person> CheckPerson(string personGroupId, byte[] bytes)
       {
-         using(Stream stream = new MemoryStream())
+         using(MemoryStream stream = new MemoryStream())
          {
             stream.Write(bytes, 0, bytes.Length);
             stream.Position = 0;

@@ -20,16 +20,17 @@ namespace FaceRec
 
          //face recognition
 
-         string testImagePath = @"..\..\Test\TestWatson2.jpg";
+         //string testImagePath = @"..\..\Test\TestWatson2.jpg";
 
-         var faceRec = new FaceRecognition();
-         faceRec.CheckPerson("inhabitants", testImagePath);
+         //var faceRec = new FaceRecognition();
+         //faceRec.CheckPerson("inhabitants", testImagePath);
 
          //speaker recognition
          Guid profileId;  
          //profileId = SpeakerRecognition.CreateProfile();     //wykonywaa raz, na poczatku
-         profileId = new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"); 
-         //SpeakerRecognition.CreateEnrollment(profileId);
+         profileId = new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29");
+         var speaker = new SpeakerRecognition();
+         speaker.CreateEnrollment(profileId);
 
          //Console.WriteLine(string.Format("Identyfication result: {0}", SpeakerRecognition.IdentifySpeaker(profileId)));
 

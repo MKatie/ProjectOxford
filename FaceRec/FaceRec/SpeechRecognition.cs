@@ -43,7 +43,7 @@ namespace FaceRec
 
       private void OnResponseReceived(object sender, SpeechResponseEventArgs e)
       {
-         string recognizedText = e.PhraseResponse.Results.Select(x => x.LexicalForm).Aggregate((x, y) => x + " " + y);
+         string recognizedText = string.Join(" ", e.PhraseResponse.Results.Select(x => x.LexicalForm));
          string[] baseTexts = new[] { "Hello this is dog", "Houston we have a problem" };
 
          _notifier?.Notify(recognizedText);
@@ -56,7 +56,7 @@ namespace FaceRec
          }
          else
          {
-            _notifier?.Notify("Error");
+            _notifier?.Notify("Password incorrect");
          }
          ResultReceived(this, passwordCorrect);
       }

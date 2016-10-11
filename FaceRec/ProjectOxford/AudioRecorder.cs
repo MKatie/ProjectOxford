@@ -37,15 +37,13 @@ namespace ProjectOxford
       }
 
 
-      public byte[] Record()
+      public void Record()
       {
          _buffer = new MemoryStream();
          _writer = new WaveFileWriter(_buffer, _recorder.WaveFormat);
 
          _notifier?.Notify("Please start speaking...");
          _recorder.StartRecording();
-
-         return _recordBytes;
       }
 
       private void RecorderOnDataAvailable(object sender, WaveInEventArgs e)
