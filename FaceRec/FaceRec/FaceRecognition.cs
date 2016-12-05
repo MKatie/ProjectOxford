@@ -27,16 +27,17 @@ namespace FaceRec
       {
          _notifier = notifier;
       }
-
+      
+      //CheckPerson dla aplikacji konsolowej
       public List<Person> CheckPerson(string personGroupId, string imagePath)
       {
-         //otwarcie pliku i detekcja twarzy
          using (Stream imageStream = File.OpenRead(imagePath))
          {
             return CheckPerson(personGroupId, imageStream);
          }
       }
 
+      //CheckPerson dla aplikacji desktopowej 
       public List<Person> CheckPerson(string personGroupId, byte[] bytes)
       {
          using(MemoryStream stream = new MemoryStream())
@@ -54,15 +55,12 @@ namespace FaceRec
          {            
             Face[] faces = _faceServiceClient.DetectAsync(imageStream).Result;
 
-            //przypisanie id twarzy do tablicy face
             Guid[] faceIds = faces.Select(face => face.FaceId).ToArray();
 
-            //Identyfikacja Id twarzy w bazie person grupy
             IdentifyResult[] results = _faceServiceClient.IdentifyAsync(personGroupId, faceIds).Result;  //typ z microsoft proj oxford
             foreach (IdentifyResult identifyResult in results)
             {
                _notifier?.Notify(string.Format("Result of face: {0}", identifyResult.FaceId));
-               //_notifier?.Notify($"Result of face: {identifyResult.FaceId}");
 
                if (identifyResult.Candidates.Length == 0)
                {
@@ -85,11 +83,8 @@ namespace FaceRec
          return detectedPersons;
       }
 
-
-      //tworzenie i trenowanie person grupy pokemonow
       private void CreatePersonGroup(string personGroupId)
       {
-         //sprawdzanie czy grupa juz istnieje 
          if (_faceServiceClient.GetPersonGroupAsync(personGroupId).Result != null)
          {
             return;
@@ -100,31 +95,25 @@ namespace FaceRec
 
       private void CreatePerson(string personGroupId, string personName)
       {
-         //sprawdzenie czy dana osoba jest juz w grupie
          if (_faceServiceClient.GetPersonsAsync(personGroupId).Result.Select(x => x.Name).Contains(personName))
          {
             return;
          }
 
-         //utworzenie osoby
          CreatePersonResult createdPerson = _faceServiceClient.CreatePersonAsync(personGroupId, personName).Result;
 
-         //przypisanie sciezki do zmiennej i wyszukanie zdjec
          string imageFolder = string.Format(@"..\..\Inhabitants\{0}\", personName);
 
          foreach (string image in Directory.GetFiles(imageFolder))
          {
             using (Stream imageStream = File.OpenRead(image))
             {
-               //wykrywanie twarzy i dodawanie zdjec do person grupy Sherlock
                _faceServiceClient.AddPersonFaceAsync(personGroupId, createdPerson.PersonId, imageStream).Wait();
             }
          }
 
-         //trenowanie grupy
          _faceServiceClient.TrainPersonGroupAsync(personGroupId).Wait();
 
-         //sprawdzanie statusu trenowania grupy 
          TrainingStatus trainingStatus = null;
          while (true)
          {
@@ -139,7 +128,6 @@ namespace FaceRec
          }
       }
 
-      //tworzenie osob z folderu inhabitants, na podstwie nazw folderow
       private void CreatePersons(string personGroupId)
       {
          foreach (string personName in Directory.GetDirectories(@"..\..\Inhabitants"))

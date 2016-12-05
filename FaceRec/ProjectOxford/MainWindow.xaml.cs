@@ -113,10 +113,11 @@ namespace ProjectOxford
                new Guid("309403b9-32f7-4eb8-8b1d-f9a0aead3d29"), e.Bytes);
             SwitchResultTileColor(_speakerTile, speakerResult);
 
+            //speech api dziala na windows 8 i wyzej
             var speechRec = new SpeechToTextRecognition();
             speechRec.SetNotifier(new ControlNotifier(_messages));
             speechRec.ResultReceived += SpeechRec_ResultReceived;
-            speechRec.StartRecognition(e.Bytes);
+            speechRec.StartRecognition(e.Bytes); 
          });
       }
 
@@ -156,13 +157,15 @@ namespace ProjectOxford
 
       private static Dictionary<Border, bool> _summary = new Dictionary<Border, bool>();
       private static readonly object _locker = new object();
+
       private void TileChanged(Border tile, bool result)
       {
          lock (_locker)
          {
             _summary.Add(tile, result);
          }                 
-         if(_summary.Count.Equals(3) && _summary.All(x => x.Value))
+
+         if(_summary.Count.Equals(3) && _summary.All(x => x.Value)) //value domyślnie równa się true
          {
             Task.Run(() =>
             {

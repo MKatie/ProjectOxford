@@ -16,29 +16,12 @@ namespace FaceRec
       {
          microphoneClient = SpeechRecognitionServiceFactory.CreateDataClient
          (SpeechRecognitionMode.ShortPhrase, "en-US", "08e1727427c640808a5d242aeec7fd97", "08e1727427c640808a5d242aeec7fd97");
-         microphoneClient.OnPartialResponseReceived += OnPartialResponseReceived;
          microphoneClient.OnResponseReceived += OnResponseReceived;
-         microphoneClient.OnConversationError += OnConversationError;
-      }
-
-      private void OnConversationError(object sender, SpeechErrorEventArgs e)
-      {
-         
-      }
-
-      private void OnPartialResponseReceived(object sender, PartialSpeechResponseEventArgs e)
-      {
-         
       }
 
       public void SetNotifier(INotifier notifier)
       {
          _notifier = notifier;
-      }
-
-
-      private void OnMicrophoneStatus(object sender, MicrophoneEventArgs e)
-      {         
       }
 
       private void OnResponseReceived(object sender, SpeechResponseEventArgs e)
@@ -74,17 +57,14 @@ namespace FaceRec
             {
                do
                {
-                  // Get more Audio data to send into byte buffer.
                   bytesRead = stream.Read(buffer, 0, buffer.Length);
 
-                  // Send of audio data to service. 
                   microphoneClient.SendAudio(buffer, bytesRead);
                }
                while (bytesRead > 0);
             }
             finally
             {
-               // We are done sending audio.  Final recognition results will arrive in OnResponseReceived event call.
                microphoneClient.EndAudio();
             }
          }

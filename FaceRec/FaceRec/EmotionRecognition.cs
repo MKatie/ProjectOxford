@@ -25,7 +25,6 @@ namespace FaceRec
          _notifier = notifier;
       }
 
-      //emotion API 
       public void RecognizeEmotionAndPlayMusic(byte[] imageData)
       {
          Emotion[] emotionResult;
@@ -33,7 +32,6 @@ namespace FaceRec
          {
             emotionResult = _emotionServiceClient.RecognizeAsync(imageFileStream).Result;
 
-            //pobranie pierwszej twarzy i emocji najwyzszej ranga
             var recognizedEmotion = emotionResult.First().Scores.ToRankedList().First().Key;
             _notifier?.Notify(string.Format("Recognized emotion: {0}", recognizedEmotion));
             SelectMusic(recognizedEmotion);
@@ -63,14 +61,11 @@ namespace FaceRec
          }
       }
 
-      //odtwarzanie muzyki z folderow
       private void PlayMusic(string folder)
       {
-         //pobieranie pelnej sciezki do folderu ze sciezki wzglednej
          string musicFolder = Path.GetFullPath(string.Format(@"..\..\Music\{0}\", folder));         
 
          _notifier?.Notify(string.Format("Playing music from playlist: {0}", folder));
-         //pobranie i odtworzenie wszystkich plikow z folderu
          foreach (string file in Directory.GetFiles(musicFolder))
          {
             _player.URL = file;
